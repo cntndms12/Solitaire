@@ -86,6 +86,15 @@
     <div class="row" id="tableau"></div>
   </div>
   
+  <button id="refreshBtn" style="
+		position: fixed;
+		bottom: 20px;
+		left: 20px;
+		z-index: 1000;
+		padding: 10px 16px;
+		font-size: 14px;
+	">🔄 새로고침</button>
+
   <button id="undoBtn" style="
 		position:fixed;
 		bottom:20px;
@@ -139,6 +148,10 @@ let foundations = {
   '♥': [],
   '♦': [],
   '♣': []
+};
+
+document.getElementById('refreshBtn').onclick = () => {
+    location.reload();
 };
 
 //덱 생성

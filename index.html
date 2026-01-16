@@ -1,151 +1,740 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>로또 매장 지도</title>
+  <meta charset="UTF-8" />
+  <title>Solitaire (Klondike)</title>
+  <style>
+    body { background:#0b6623; color:#fff; font-family:sans-serif; }
+    .board { display:flex; flex-direction:column; gap:20px; padding:20px; }
+    .row { display:flex; gap:12px; }
+    .pile {
+	  width:80px;
+	  min-height:110px;   /* ⭐ height → min-height */
+	  border:1px solid rgba(255,255,255,0.3);
+	  border-radius:6px;
+	  position:relative;
+	}
+    .card {
+	  width:80px;
+	  height:110px;
+	  border-radius:6px;
+	  background:#fff;
+	  position:absolute;
+	  cursor:pointer;
+	  outline: 1px solid black;
+	  cursor: grab;
+	}
+	
+	.card:active {
+	  cursor: grabbing;
+	}
 
-<style>
-body {
-  margin: 0;
-  font-family: "Malgun Gothic", Arial, sans-serif;
-}
+	.card .label {
+	  position:absolute;
+	  top:6px;
+	  left:6px;
+	  font-size:14px;
+	  font-weight:bold;
+	  color: #000;
+	}
 
-h2 {
-  text-align: center;
-}
+	.red .label {
+	  color:red;
+	}
 
-#map {
-  width: 100%;
-  height: 90vh;
-}
+    .red { color:red; }
+    .back { background:#1e90ff; }
+	.selected {
+	  outline: 3px solid gold;
+	  outline-offset: -3px;
+	}
+	
+	@keyframes firework {
+	  0% {
+		transform: translate(0,0) rotate(0deg);
+		opacity: 1;
+	  }
+	  100% {
+		transform:
+		  translate(
+			calc((Math.random() - 0.5) * 600px),
+			-600px
+		  )
+		  rotate(720deg);
+		opacity: 0;
+	  }
+	}
 
-/* 버튼 */
-#mobileButtons {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 999;
-  display: flex;
-  gap: 10px;
-}
-
-#mobileButtons button {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 20px;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-#toggleListBtn {
-  background: #ff5252;
-  color: white;
-  display: none;        /* 기본은 숨김 */
-}
-
-#jackPotBtn {
-  background: #27ae60;
-  color: white;
-}
-
-/* 레이아웃 */
-#layout {
-  display: flex;
-  height: 90vh;
-}
-
-#list {
-  width: 50%;
-  overflow: auto;
-  border-right: 1px solid #ccc;
-  padding: 10px;
-}
-
-@media (max-width: 768px) {
-  #toggleListBtn {
-    display: block;
-  }
-
-  #layout {
-    flex-direction: row;
-  }
-
-  #list {
-    display: none;
-    width: 80%;
-    height: 100%;
-  }
-
-  #map {
-    width: 100%;
-  }
-
-  #layout.show-list #list {
-    display: block;
-  }
-
-  #layout.show-list #map {
-    display: block;
-    width: 20%;
-  }
-}
-</style>
+	.firework {
+	  animation: firework 1.2s ease-out forwards;
+	}
+	
+  </style>
 </head>
-
 <body>
-
-<h2>🎯 인천&부산 1등 로또 판매점</h2>
-
-<div id="mobileButtons">
-	<button id="toggleListBtn">📋목록보기</button>
-	<button id="jackPotBtn">🎰로또번호 뽑기</button>
-</div>
-
-<div id="layout">
-  <div id="list">
-	<p style="font-size:12px; color:#555; line-height:1.4;">
-	  출처 : 기획재정부_온라인복권 1등 당첨 판매점 현황 정보<br/>
-	  범위 : 1123~1175회차(24.6.2.~25.6.7.)
-	</p>
-    <table id="storeTable" style="width:100%;border-collapse:collapse;font-size:12px;">
-      <thead>
-        <tr style="background:#f2f2f2;">
-          <th style="width:10%;">순번</th>
-          <th style="text-align:left; width:30%;">상호</th>
-          <th style="text-align:left; width:20%;">지역</th>
-          <th style="width:20%;">1등 자동<br/>당첨 건수</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <h1>🃏 솔리테어 (클론다이크)</h1>
+  <div class="board">
+    <div class="row" id="top">
+      <div class="pile" id="stock"></div>
+      <div class="pile" id="waste"></div>
+      <div style="flex:1"></div>
+      <div class="pile foundation" data-suit="♠"></div>
+      <div class="pile foundation" data-suit="♥"></div>
+      <div class="pile foundation" data-suit="♦"></div>
+      <div class="pile foundation" data-suit="♣"></div>
+    </div>
+    <div class="row" id="tableau"></div>
   </div>
-
-  <div id="map"></div>
-</div>
-
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=99e36911d2934cad408a449205185e02&libraries=services,clusterer"></script>
-<script src="map.js"></script>
-
+  
+  <!-- 승리 오버레이 UI -->
+  <div id="winOverlay" style="
+	  display:none;
+	  position:fixed;
+	  inset:0;
+	  background:rgba(0,0,0,0.6);
+	  z-index:999;
+	  color:#fff;
+	  font-size:48px;
+	  font-weight:bold;
+	  align-items:center;
+	  justify-content:center;
+	  flex-direction:column;
+	">
+	  🎉 CLEAR!
+	  <button onclick="location.reload()" style="
+		margin-top:20px;
+		font-size:18px;
+		padding:10px 20px;
+		cursor:pointer;
+	  ">다시하기</button>
+	</div>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const toggleBtn = document.getElementById('toggleListBtn');
-  const jackPotBtn = document.getElementById('jackPotBtn');
-  const layout = document.getElementById('layout');
+const suits = ['♠','♥','♦','♣'];
+const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck = [];
+let stock = [], waste = [];
+let tableau = [[],[],[],[],[],[],[]];
+let history = []; // 전체 상태 저장용
+let cardId = 0;
+let foundations = {
+  '♠': [],
+  '♥': [],
+  '♦': [],
+  '♣': []
+};
 
-  toggleBtn.addEventListener('click', () => {
-    layout.classList.toggle('show-list');
-    toggleBtn.textContent = layout.classList.contains('show-list')
-      ? '🗺 지도보기'
-      : '📋목록보기';
+//덱 생성
+function createDeck() {
+  deck = [];
+  for (let s of suits) {
+    for (let v of values) {
+      deck.push({
+        id: cardId++,   // ⭐ 고유 ID
+        suit: s,
+        value: v,
+        faceUp: false
+      });
+    }
+  }
+  deck.sort(() => Math.random() - 0.5);
+}
+
+//카드배치
+function deal() {
+  for (let i=0;i<7;i++) {
+    for (let j=0;j<=i;j++) {
+      const card = deck.pop();
+      if (j === i) card.faceUp = true;
+      tableau[i].push(card);
+    }
+  }
+  stock = deck;
+}
+
+function render() {
+  document.getElementById('stock').innerHTML = '';
+  document.getElementById('waste').innerHTML = '';
+
+  // stock
+  if (stock.length || waste.length) {
+	  const c = document.createElement('div');
+	  c.className = 'card back';
+	  c.onclick = drawCard;
+	  document.getElementById('stock').appendChild(c);
+	}
+
+  // waste
+  if (waste.length) {
+    const card = waste[waste.length-1];
+    document.getElementById('waste')
+      .appendChild(cardEl(card, {type:'waste'}));
+  }
+
+  /* =====================
+     tableau 렌더
+     ===================== */
+  const tab = document.getElementById('tableau');
+  tab.innerHTML = '';
+
+  tableau.forEach((col, colIdx) => {
+	  const p = document.createElement('div');
+	  p.className = 'pile';
+
+	  let topOffset = 0; // ⭐⭐⭐ 여기! 컬럼마다 초기화
+
+	  p.onclick = (e) => {
+		if (e.target !== p) return;
+		onPileClick({ type:'tableau', index:colIdx });
+	  };
+	    // 🔽 드래그 허용 (필수)
+	  p.ondragover = (e) => {
+		e.preventDefault(); // 이거 없으면 drop 안됨
+	  };
+
+	  // 🔽 드롭 시 이동
+	  p.ondrop = (e) => {
+		e.preventDefault();
+		onPileClick({ type:'tableau', index:colIdx });
+	  };
+
+	  col.forEach((card) => {
+		const el = cardEl(card, { type:'tableau', index:colIdx });
+
+		if (!card.faceUp) {
+		  el.style.top = topOffset + 'px';
+		  topOffset += 20;   // 뒤집힌 카드
+		} else {
+		  el.style.top = topOffset + 'px';
+		  topOffset += 30;   // 펼쳐진 카드
+		}
+
+		p.appendChild(el);
+	  });
+
+	  tab.appendChild(p);
+	});
+
+
+  /* =====================
+     foundation 렌더
+     ===================== */
+  document.querySelectorAll('.foundation').forEach(f => {
+	  const suit = f.dataset.suit;
+	  f.innerHTML = '';
+
+	  const pile = foundations[suit];
+
+	  if (pile.length) {
+		const card = pile[pile.length - 1];
+		f.appendChild(cardEl(card, { type:'foundation', suit }));
+	  } else {
+		// ⭐ 무늬 표시
+		const hint = document.createElement('div');
+		hint.style.position = 'absolute';
+		hint.style.inset = '0';
+		hint.style.display = 'flex';
+		hint.style.alignItems = 'center';
+		hint.style.justifyContent = 'center';
+		hint.style.fontSize = '36px';
+		hint.style.opacity = '0.3';
+		hint.textContent = suit;
+		f.appendChild(hint);
+	  }
+
+	  f.onclick = () =>
+		onFoundationClick({ type:'foundation', suit });
+	});
+	
+	// 마지막에 버튼 상태 갱신
+	updateAutoCompleteButton();
+	createUndoButton(); // 항상 버튼 생성
+}
+
+//카드 쌓기
+function cardEl(card, fromInfo) {
+  const d = document.createElement('div');
+  d.className = 'card ' + ((card.suit==='♥'||card.suit==='♦')?'red':'');
+
+  if (!card.faceUp) d.classList.add('back');
+
+  if (card.faceUp) {
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = card.value + card.suit;
+    d.appendChild(label);
+  }
+
+  // 🖱 마우스 이벤트
+  d.onclick = (e) => { ... };
+  d.ondblclick = (e) => { ... };
+  d.ondragstart = (e) => { ... };
+
+  // ✅ 여기에 바로 터치 이벤트 추가
+  d.ontouchstart = (e) => {
+    e.preventDefault();
+    selectedCard = card;
+    selectedFrom = fromInfo;
+    const touch = e.touches[0];
+    d.startX = touch.clientX;
+    d.startY = touch.clientY;
+  };
+
+  d.ontouchmove = (e) => {
+    if (!selectedCard) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - d.startX;
+    const dy = touch.clientY - d.startY;
+    d.style.transform = `translate(${dx}px, ${dy}px)`;
+  };
+
+  d.ontouchend = (e) => {
+    if (!selectedCard) return;
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+
+    if (!el) {
+      selectedCard = null;
+      selectedFrom = null;
+      render();
+      return;
+    }
+
+    if (el.classList.contains('pile')) {
+      onPileClick({ type: 'tableau', index: Array.from(el.parentNode.children).indexOf(el) });
+    } else if (el.classList.contains('foundation')) {
+      onFoundationClick({ type: 'foundation', suit: el.dataset.suit });
+    }
+
+    selectedCard = null;
+    selectedFrom = null;
+    render();
+  };
+
+  // 카드 선택 표시
+  if (selectedCard && selectedCard.id === card.id) {
+    d.classList.add('selected');
+  }
+
+  return d;
+}
+
+//카드 뽑기
+function drawCard() {
+  if (!stock.length) {
+    if (!waste.length) return;
+
+    while (waste.length) {
+      const c = waste.pop();
+      c.faceUp = false;
+      stock.push(c);
+    }
+  } else {
+    const c = stock.pop();
+    c.faceUp = true;
+    waste.push(c);
+  }
+  render();
+}
+
+let selectedCard = null;
+let selectedFrom = null;
+
+function valueNum(v) {
+  return values.indexOf(v);
+}
+
+//카드 놓는 규칙
+function canMove(card, from, to) {
+  if (to.type === 'tableau') {
+    const col = tableau[to.index];
+
+    if (col.length === 0) return card.value === 'K';
+
+    const top = col[col.length - 1];
+    const diffColor =
+      (['♥','♦'].includes(card.suit)) !==
+      (['♥','♦'].includes(top.suit));
+
+    return diffColor &&
+      valueNum(card.value) === valueNum(top.value) - 1;
+  }
+  return false;
+}
+
+//카드 선택
+function onCardClick(card, from) {
+  if (!card.faceUp) return;
+
+  // 1️⃣ 선택
+  if (!selectedCard) {
+    selectedCard = card;
+    selectedFrom = from;
+    render(); // ⭐ 중요
+    return;
+  }
+
+  // 2️⃣ 같은 카드 / 같은 컬럼이면 취소
+  if (
+    from.type === 'tableau' &&
+    selectedFrom.type === 'tableau' &&
+    from.index === selectedFrom.index
+  ) {
+    selectedCard = null;
+    selectedFrom = null;
+    render();
+    return;
+  }
+
+  // 3️⃣ 다른 컬럼 카드 클릭 → 이동 시도
+  if (from.type === 'tableau') {
+    onPileClick({ type:'tableau', index: from.index });
+  }
+  
+  // foundation 카드 클릭 시 이동 시도
+  if (from.type === 'foundation') {
+    onFoundationClick({ type:'foundation', suit: from.suit });
+  }
+}
+
+function onPileClick(to) {
+  if (!selectedCard) return;
+  
+  saveHistory(); // ⭐ 이동 전에 상태 저장
+
+  const stack = getMoveStack();
+  if (canMove(stack[0], selectedFrom, to)) {
+
+    // 🔹 출발지 제거
+    if (selectedFrom.type === 'tableau') {
+      const col = tableau[selectedFrom.index];
+      col.splice(col.length - stack.length, stack.length);
+
+      if (col.length && !col[col.length - 1].faceUp) {
+        col[col.length - 1].faceUp = true;
+      }
+    }
+
+    // 🔹 waste → tableau (1장)
+    if (selectedFrom.type === 'waste') {
+      waste.pop();
+    }
+	
+	// ⭐ foundation → tableau 이동 처리
+    if (selectedFrom.type === 'foundation') {
+      const pile = foundations[selectedFrom.suit];
+      pile.pop();  // 마지막 카드 제거
+    }
+	
+    // 🔹 목적지에 여러 장 추가
+    tableau[to.index].push(...stack);
+  }
+
+  selectedCard = null;
+  selectedFrom = null;
+  render();
+}
+
+//foundation 규칙 함수
+function canMoveToFoundation(card, to) {
+  const pile = foundations[to.suit];
+
+  // 빈 foundation → A만 가능
+  if (pile.length === 0) {
+	return card.value === 'A' && card.suit === to.suit;
+  }
+
+  const top = pile[pile.length - 1];
+  return (
+    card.suit === to.suit &&
+    valueNum(card.value) === valueNum(top.value) + 1
+  );
+}
+
+//foundation 클릭 처리
+function onFoundationClick(to) {
+  if (!selectedCard) return;
+
+  if (canMoveToFoundation(selectedCard, to)) {
+
+    // 🔹 출발지 제거
+    if (selectedFrom.type === 'tableau') {
+      const col = tableau[selectedFrom.index];
+      col.pop();
+
+      if (col.length && !col[col.length - 1].faceUp) {
+        col[col.length - 1].faceUp = true;
+      }
+    }
+
+    if (selectedFrom.type === 'waste') {
+      waste.pop();
+    }
+
+    // 🔹 foundation에 추가
+    foundations[to.suit].push(selectedCard);
+	checkWin();
+  }
+
+  selectedCard = null;
+  selectedFrom = null;
+  render();  
+}
+
+//선택 카드 위치 찾기
+function getMoveStack() {
+  if (selectedFrom.type !== 'tableau') {
+    return [selectedCard];
+  }
+
+  const col = tableau[selectedFrom.index];
+  const idx = col.findIndex(c => c.id === selectedCard.id);
+
+  return col.slice(idx);
+}
+
+function saveHistory() {
+  // 깊은 복사 필요 (deck, tableau, waste, foundations)
+  const state = {
+    tableau: tableau.map(col => col.map(c => ({...c}))),
+    waste: waste.map(c => ({...c})),
+    foundations: {
+      '♠': foundations['♠'].map(c => ({...c})),
+      '♥': foundations['♥'].map(c => ({...c})),
+      '♦': foundations['♦'].map(c => ({...c})),
+      '♣': foundations['♣'].map(c => ({...c})),
+    }
+  };
+  history.push(state);
+}
+
+function createUndoButton() {
+  let btn = document.getElementById('undoBtn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'undoBtn';
+    btn.textContent = '↩️ 실행취소';
+    btn.style.position = 'fixed';
+    btn.style.bottom = '20px';
+    btn.style.right = '20px';
+    btn.style.zIndex = '1000';
+    btn.style.padding = '10px 16px';
+    btn.style.fontSize = '14px';
+    btn.onclick = undoMove;
+    document.body.appendChild(btn);
+  }
+}
+
+function undoMove() {
+  if (!history.length) return;
+
+  const prev = history.pop();
+
+  tableau = prev.tableau.map(col => col.map(c => ({...c})));
+  waste = prev.waste.map(c => ({...c}));
+  foundations = {
+    '♠': prev.foundations['♠'].map(c => ({...c})),
+    '♥': prev.foundations['♥'].map(c => ({...c})),
+    '♦': prev.foundations['♦'].map(c => ({...c})),
+    '♣': prev.foundations['♣'].map(c => ({...c})),
+  };
+
+  selectedCard = null;
+  selectedFrom = null;
+
+  render();
+}
+
+//자동 이동
+function autoMoveToFoundation(card, from) {
+  if (!card.faceUp) return;
+
+  for (let suit of suits) {
+    const to = { type:'foundation', suit };
+
+    if (canMoveToFoundation(card, to)) {
+
+      // 출발지 제거
+      if (from.type === 'tableau') {
+        const col = tableau[from.index];
+        col.pop();
+
+        if (col.length && !col[col.length - 1].faceUp) {
+          col[col.length - 1].faceUp = true;
+        }
+      }
+
+      if (from.type === 'waste') {
+        waste.pop();
+      }
+
+      foundations[suit].push(card);
+      selectedCard = null;
+      selectedFrom = null;
+      render();
+      return;
+    }
+  }
+}
+
+function allCardsFaceUp() {
+  // tableau 모든 카드 확인
+  const tableauUp = tableau.flat().every(c => c.faceUp);
+  // waste 카드 확인
+  const wasteUp = waste.every(c => c.faceUp);
+  // stock은 기본적으로 뒤집혀 있음 → stock이 비어 있으면 신경 안 써도 됨
+  return tableauUp && wasteUp;
+}
+
+function updateAutoCompleteButton() {
+  let btn = document.getElementById('autoCompleteBtn');
+  
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'autoCompleteBtn';
+    btn.textContent = '🧪 자동완성';
+    btn.style.position = 'fixed';
+    btn.style.top = '20px';
+    btn.style.right = '20px';
+    btn.style.zIndex = '1000';
+    btn.style.padding = '10px 16px';
+    btn.style.fontSize = '14px';
+    btn.onclick = autoComplete; // 클릭 시 자동완성 실행
+    document.body.appendChild(btn);
+  }
+
+  // 모든 카드가 앞면이면 표시, 아니면 숨김
+  btn.style.display = allCardsFaceUp() ? 'block' : 'none';
+}
+
+
+//자동 완성
+function autoComplete() {
+  let moved;
+
+  do {
+    moved = false;
+
+    // 1️⃣ tableau → foundation
+    tableau.forEach((col, colIdx) => {
+      if (!col.length) return;
+      const card = col[col.length - 1]; // 맨 위 카드
+      for (let suit of suits) {
+        const target = { type: 'foundation', suit };
+        if (canMoveToFoundation(card, target)) {
+          col.pop();
+          foundations[suit].push(card);
+          moved = true;
+          if (col.length && !col[col.length - 1].faceUp)
+            col[col.length - 1].faceUp = true;
+        }
+      }
+    });
+
+    // 2️⃣ waste → foundation
+    if (waste.length) {
+      const card = waste[waste.length - 1];
+      for (let suit of suits) {
+        const target = { type: 'foundation', suit };
+        if (canMoveToFoundation(card, target)) {
+          waste.pop();
+          foundations[suit].push(card);
+          moved = true;
+        }
+      }
+    }
+
+    render();
+  } while (moved);
+
+  checkWin(); // ✅ 끝나면 WIN 체크
+}
+
+//승리 조건
+function checkWin() {
+  const total =
+    foundations['♠'].length +
+    foundations['♥'].length +
+    foundations['♦'].length +
+    foundations['♣'].length;
+
+  if (total === 52) {
+    showWin();
+  }
+}
+
+//카드 폭죽
+function cardFirework() {
+  const cards = document.querySelectorAll('.card');
+
+  cards.forEach(card => {
+    const rect = card.getBoundingClientRect();
+
+    // 🔥 body 기준으로 이동
+    card.style.position = 'fixed';
+    card.style.left = rect.left + 'px';
+    card.style.top = rect.top + 'px';
+    card.style.margin = '0';
+    card.style.zIndex = '9999';
+
+    document.body.appendChild(card);
+
+    const x = (Math.random() - 0.5) * window.innerWidth;
+    const y = -window.innerHeight - Math.random() * 300;
+    const r = Math.random() * 720 - 360;
+
+    requestAnimationFrame(() => {
+      card.style.transition = 'transform 1.3s ease-out, opacity 1.3s';
+      card.style.transform = `translate(${x}px, ${y}px) rotate(${r}deg)`;
+      card.style.opacity = '0';
+    });
+  });
+}
+
+//승리 표시
+function showWin() {
+  cardFirework();   // 🎆 먼저 터트리고
+
+  const o = document.getElementById('winOverlay');
+  o.style.display = 'flex';
+
+  document.body.style.pointerEvents = 'none';
+  o.style.pointerEvents = 'auto';
+}
+
+
+//테스트
+function forceWin() {
+  // 모든 카드 수집
+  const allCards = [
+    ...stock,
+    ...waste,
+    ...tableau.flat(),
+    ...foundations['♠'],
+    ...foundations['♥'],
+    ...foundations['♦'],
+    ...foundations['♣']
+  ];
+
+  // 초기화
+  stock = [];
+  waste = [];
+  tableau = [[],[],[],[],[],[],[]];
+  foundations = { '♠':[], '♥':[], '♦':[], '♣':[] };
+
+  // foundation에 정렬해서 넣기
+  allCards.forEach(c => {
+    c.faceUp = true;
+    foundations[c.suit].push(c);
   });
 
-  jackPotBtn.addEventListener('click', () => {
-    window.location.href = "https://cntndms12.github.io/lotto-web/";
-  });
-});
+  render();
+  checkWin();
+}
+
+
+createDeck();
+deal();
+render();
 </script>
-
 </body>
 </html>

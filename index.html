@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로또 매장 지도</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Malgun Gothic", Arial, sans-serif;
+}
+
+h2 {
+  text-align: center;
+}
+
+#map {
+  width: 100%;
+  height: 90vh;
+}
+
+/* 버튼 */
+#mobileButtons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  display: flex;
+  gap: 10px;
+}
+
+#mobileButtons button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+#toggleListBtn {
+  background: #ff5252;
+  color: white;
+  display: none;        /* 기본은 숨김 */
+}
+
+#jackPotBtn {
+  background: #27ae60;
+  color: white;
+}
+
+/* 레이아웃 */
+#layout {
+  display: flex;
+  height: 90vh;
+}
+
+#list {
+  width: 50%;
+  overflow: auto;
+  border-right: 1px solid #ccc;
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  #toggleListBtn {
+    display: block;
+  }
+
+  #layout {
+    flex-direction: row;
+  }
+
+  #list {
+    display: none;
+    width: 80%;
+    height: 100%;
+  }
+
+  #map {
+    width: 100%;
+  }
+
+  #layout.show-list #list {
+    display: block;
+  }
+
+  #layout.show-list #map {
+    display: block;
+    width: 20%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h2>🎯 인천&부산 1등 로또 판매점</h2>
+
+<div id="mobileButtons">
+	<button id="toggleListBtn">📋목록보기</button>
+	<button id="jackPotBtn">🎰로또번호 뽑기</button>
+</div>
+
+<div id="layout">
+  <div id="list">
+	<p style="font-size:12px; color:#555; line-height:1.4;">
+	  출처 : 기획재정부_온라인복권 1등 당첨 판매점 현황 정보<br/>
+	  범위 : 1123~1175회차(24.6.2.~25.6.7.)
+	</p>
+    <table id="storeTable" style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#f2f2f2;">
+          <th style="width:10%;">순번</th>
+          <th style="text-align:left; width:30%;">상호</th>
+          <th style="text-align:left; width:20%;">지역</th>
+          <th style="width:20%;">1등 자동<br/>당첨 건수</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=99e36911d2934cad408a449205185e02&libraries=services,clusterer"></script>
+<script src="map.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleBtn = document.getElementById('toggleListBtn');
+  const jackPotBtn = document.getElementById('jackPotBtn');
+  const layout = document.getElementById('layout');
+
+  toggleBtn.addEventListener('click', () => {
+    layout.classList.toggle('show-list');
+    toggleBtn.textContent = layout.classList.contains('show-list')
+      ? '🗺 지도보기'
+      : '📋목록보기';
+  });
+
+  jackPotBtn.addEventListener('click', () => {
+    window.location.href = "https://cntndms12.github.io/lotto-web/";
+  });
+});
+</script>
+
+</body>
+</html>

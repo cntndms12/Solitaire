@@ -86,6 +86,24 @@
     <div class="row" id="tableau"></div>
   </div>
   
+  <button id="undoBtn" style="
+		position:fixed;
+		bottom:20px;
+		right:20px;
+		z-index:1000;
+		padding:10px 16px;
+		font-size:14px;
+	">↩️ 실행취소</button>
+	
+	<button id="autoCompleteBtn" style="
+		position:fixed;
+		top:20px;
+		right:20px;
+		z-index:1000;
+		padding:10px 16px;
+		font-size:14px;
+		display:none;
+	">🧪 자동완성</button>
   <!-- 승리 오버레이 UI -->
   <div id="winOverlay" style="
 	  display:none;
@@ -264,58 +282,29 @@ function cardEl(card, fromInfo) {
     d.appendChild(label);
   }
 
-  // 🖱 마우스 이벤트
-  d.onclick = (e) => { ... };
-  d.ondblclick = (e) => { ... };
-  d.ondragstart = (e) => { ... };
+  // 마우스 클릭 이벤트
+  d.onclick = (e) => { e.stopPropagation(); onCardClick(card, fromInfo); };
 
-  // ✅ 여기에 바로 터치 이벤트 추가
-  d.ontouchstart = (e) => {
-    e.preventDefault();
-    selectedCard = card;
-    selectedFrom = fromInfo;
-    const touch = e.touches[0];
-    d.startX = touch.clientX;
-    d.startY = touch.clientY;
-  };
-
-  d.ontouchmove = (e) => {
-    if (!selectedCard) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - d.startX;
-    const dy = touch.clientY - d.startY;
-    d.style.transform = `translate(${dx}px, ${dy}px)`;
-  };
-
-  d.ontouchend = (e) => {
-    if (!selectedCard) return;
-    const touch = e.changedTouches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-
-    if (!el) {
-      selectedCard = null;
-      selectedFrom = null;
-      render();
-      return;
+  // 더블클릭 → foundation 자동 이동
+  d.ondblclick = (e) => {
+    e.stopPropagation();
+    const target = { type: 'foundation', suit: card.suit };
+    if (canMoveToFoundation(card, target)) {
+      selectedCard = card;
+      selectedFrom = fromInfo;
+      onFoundationClick(target);
     }
-
-    if (el.classList.contains('pile')) {
-      onPileClick({ type: 'tableau', index: Array.from(el.parentNode.children).indexOf(el) });
-    } else if (el.classList.contains('foundation')) {
-      onFoundationClick({ type: 'foundation', suit: el.dataset.suit });
-    }
-
-    selectedCard = null;
-    selectedFrom = null;
-    render();
   };
+
+  d.draggable = card.faceUp;
+  d.ondragstart = (e) => { selectedCard = card; selectedFrom = fromInfo; e.dataTransfer.setData('text/plain', card.id); };
 
   // 카드 선택 표시
-  if (selectedCard && selectedCard.id === card.id) {
-    d.classList.add('selected');
-  }
+  if (selectedCard && selectedCard.id === card.id) d.classList.add('selected');
 
-  return d;
+  d.setAttribute('data-card-id', card.id); // 터치용 ID
+
+  return d; // ← 여기서 return 해야 안전
 }
 
 //카드 뽑기
@@ -504,8 +493,33 @@ function saveHistory() {
       '♣': foundations['♣'].map(c => ({...c})),
     }
   };
-  history.push(state);
+  history.push({
+        stock: stock.map(c=>({...c})),
+        waste: waste.map(c=>({...c})),
+        tableau: tableau.map(col=>col.map(c=>({...c}))),
+        foundations: {
+            '♠': [...foundations['♠']],
+            '♥': [...foundations['♥']],
+            '♦': [...foundations['♦']],
+            '♣': [...foundations['♣']]
+        }
+    });
 }
+
+document.getElementById('undoBtn').onclick = () => {
+    if(!history.length) return;
+    const last = history.pop();
+    stock = last.stock.map(c=>({...c}));
+    waste = last.waste.map(c=>({...c}));
+    tableau = last.tableau.map(col=>col.map(c=>({...c})));
+    foundations = {
+        '♠':[...last.foundations['♠']],
+        '♥':[...last.foundations['♥']],
+        '♦':[...last.foundations['♦']],
+        '♣':[...last.foundations['♣']]
+    };
+    render();
+};
 
 function createUndoButton() {
   let btn = document.getElementById('undoBtn');
@@ -606,6 +620,10 @@ function updateAutoCompleteButton() {
   btn.style.display = allCardsFaceUp() ? 'block' : 'none';
 }
 
+// 모든 카드가 앞면일 때만 버튼 보이기
+function checkAllFaceUp() {
+    return tableau.flat().every(c=>c.faceUp) && waste.every(c=>c.faceUp);
+}
 
 //자동 완성
 function autoComplete() {
@@ -731,6 +749,86 @@ function forceWin() {
   checkWin();
 }
 
+
+// 모바일 터치용 카드 이동
+let touchStartCard = null;
+let touchStartFrom = null;
+let touchStartY = 0;
+let touchStartX = 0;
+
+document.addEventListener('touchstart', e => {
+    const el = e.target.closest('.card');
+    if (!el) return;
+	e.preventDefault(); // 카드 터치일 때만
+
+    const id = parseInt(el.getAttribute('data-card-id'));
+    touchStartCard = findCardById(id);
+    touchStartFrom = findCardFrom(touchStartCard);
+
+    touchStartY = e.touches[0].clientY;
+    touchStartX = e.touches[0].clientX;
+
+    e.preventDefault();
+});
+
+document.addEventListener('touchmove', e => {
+    if (!touchStartCard) return;
+    const moveY = e.touches[0].clientY - touchStartY;
+    const moveX = e.touches[0].clientX - touchStartX;
+    const el = document.querySelector(`.card[data-card-id='${touchStartCard.id}']`);
+    el.style.transform = `translate(${moveX}px, ${moveY}px)`;
+});
+
+document.addEventListener('touchend', e => {
+    if (!touchStartCard) return;
+
+    const el = document.querySelector(`.card[data-card-id='${touchStartCard.id}']`);
+    el.style.transform = ''; // 위치 초기화
+
+    const touch = e.changedTouches[0];
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    let targetPile = targetEl.closest('.pile');
+
+    if (targetPile) {
+        if (targetPile.id === 'stock' || targetPile.id === 'waste') {
+            // 이동 불가
+        } else if (targetPile.classList.contains('foundation')) {
+            const to = { type:'foundation', suit: targetPile.dataset.suit };
+            selectedCard = touchStartCard;
+            selectedFrom = touchStartFrom;
+            onFoundationClick(to);
+        } else if (targetPile.parentElement.id === 'tableau') {
+            const to = { type:'tableau', index: Array.from(document.querySelectorAll('#tableau .pile')).indexOf(targetPile) };
+            selectedCard = touchStartCard;
+            selectedFrom = touchStartFrom;
+            onPileClick(to);
+        }
+    }
+
+    touchStartCard = null;
+    touchStartFrom = null;
+});
+
+// 헬퍼: 카드 ID → 카드 객체
+function findCardById(id) {
+    for (let col of tableau) {
+        for (let c of col) if (c.id === id) return c;
+    }
+    for (let c of waste) if (c.id === id) return c;
+    for (let s of suits) {
+        for (let c of foundations[s]) if (c.id === id) return c;
+    }
+    for (let c of stock) if (c.id === id) return c;
+    return null;
+}
+
+// 헬퍼: 카드 객체 → fromInfo
+function findCardFrom(card) {
+    for (let i=0;i<tableau.length;i++) if (tableau[i].includes(card)) return { type:'tableau', index:i };
+    if (waste.includes(card)) return { type:'waste' };
+    for (let s of suits) if (foundations[s].includes(card)) return { type:'foundation', suit:s };
+    return null;
+}
 
 createDeck();
 deal();

@@ -10,7 +10,7 @@
 	  --card-gap: clamp(6px, 2vw, 12px);
 	  
 	  --tableau-w: calc(
-		(var(--card-w) * 7) + var(--card-gap) * 6)
+		(var(--card-w) * 7) + (var(--card-gap) * 6)
 	  );
 	}
     body { background:#0b6623; color:#fff; font-family:sans-serif; 
@@ -33,22 +33,17 @@
 	  display: flex;
 	  justify-content: space-between;
 	  margin-top: 12px;
-	  Padding-left: 20px;
-	  Padding-right: 20px;	  
+	  Padding: 0 20px;
 	}
 	#actionBarTop button {
 	  padding: 10px 10px;
 	  font-size: 20px;
 	}
-	#leftBtn{
-	  justify-content: space-between;
-	  lefe: 10px;	  
-	}
 	#actionBarBottom {
 	  position: fixed;
 	  bottom: 20px;
 	  left: 20px;
-	  width: 655px;              /* PC 기준 tableau 폭 */
+	  width: 655px;
 	  display: flex;
 	  z-index: 1000;
 	}

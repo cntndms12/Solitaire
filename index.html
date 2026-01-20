@@ -71,15 +71,26 @@
 	.card:active {
 	  cursor: grabbing;
 	}
-	.card .label {
+	.label.top-left {
 	  position: absolute;
 	  top: 8px;
 	  left: 8px;
-	  font-size: clamp(16px, 4vw, 22px);
+	  font-size: clamp(12px, 4vw, 22px);
 	  font-weight: 800;
 	  line-height: 1;
 	  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-	}	
+	}
+
+	.label.bottom-right {
+	  position: absolute;
+	  bottom: 8px;
+	  right: 8px;
+	  font-size: clamp(12px, 4vw, 22px);
+	  font-weight: 800;
+	  line-height: 1;
+	  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+	  transform: rotate(180deg); /* 뒤집어서 카드 느낌 */
+	}
 	.red { color: #c60000; }
 	.black { color: #111; }
     .center-suit {
@@ -89,7 +100,7 @@
 	  align-items: center;
 	  justify-content: center;
 
-	  font-size: clamp(44px, 14vw, 72px);
+	  font-size: clamp(80px, 14vw, 72px);
 	  opacity: 0.95;
 	  font-weight: 900;
 	  pointer-events: none;
@@ -143,13 +154,17 @@
 		--card-h: 148px;
 		--card-gap: 6px;
 	  }
-	  body {font-size: 16px;}
+	  body {
+		font-size: 16px;
+		touch-action: manipulation;   /* 탭 시 확대 방지 */
+		-ms-touch-action: manipulation; /* IE/Edge 대응 */
+		overscroll-behavior: none;   /* 스크롤 튐 방지 */
+		}
 	  /* 하단 버튼 바 */
 	  #actionBarBottom {
 		width: calc(100% - 24px); /* 화면 양쪽 여백 */
 		bottom: calc(16px + env(safe-area-inset-bottom));
 	  }
-
 	  #actionBarBottom button {
 		width: 100%;
 		padding: 18px 0;
@@ -394,11 +409,19 @@ function cardEl(card, fromInfo) {
   if (!card.faceUp) d.classList.add('back');
 
   if (card.faceUp) {
-    // 좌상단 숫자 + 무늬
-    const label = document.createElement('div');
-    label.className = 'label';
-    label.textContent = card.value + card.suit;
-    d.appendChild(label);
+    // 왼쪽 위 라벨
+    const labelTop = document.createElement('div');
+    labelTop.className = 'label top-left';
+    labelTop.textContent = card.value + card.suit;
+    d.appendChild(labelTop);
+	
+	// 오른쪽 아래 라벨
+	/*
+    const labelBottom = document.createElement('div');
+    labelBottom.className = 'label bottom-right';
+    labelBottom.textContent = card.value + card.suit;
+    d.appendChild(labelBottom);
+	*/
 
     // 중앙 큰 무늬
     const center = document.createElement('div');

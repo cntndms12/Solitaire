@@ -5,8 +5,46 @@
   <title>Solitaire (Klondike)</title>
   <style>
     body { background:#0b6623; color:#fff; font-family:sans-serif; }
-    .board { display:flex; flex-direction:column; gap:20px; padding:20px; }
+    .board { display:flex; flex-direction:column; gap:20px; padding:20px; width:40%;}
     .row { display:flex; gap:12px; }
+	#top {
+	  display: grid;
+	  grid-template-columns: repeat(7, 80px);
+	  gap: 12px;
+	  width: fit-content;
+	}
+	#tableau {
+	  display: grid;
+	  grid-template-columns: repeat(7, 80px);
+	  gap: 12px;
+	}
+	#actionBarTop {
+	  width: 655px;
+	  display: flex;
+	  justify-content: space-between;
+	  margin-top: 12px;
+	}
+	#actionBarTop button {
+	  padding: 10px 16px;
+	  font-size: 14px;
+	}
+	#leftBtn{
+		justify-content: space-between;
+	}
+	#actionBarBottom {
+	  position: fixed;
+	  bottom: 20px;
+	  left: 50%;
+	  transform: translateX(-50%);
+	  width: 655px;              /* PC 기준 tableau 폭 */
+	  display: flex;
+	  justify-content: center;
+	  z-index: 1000;
+	}
+	#actionBarBottom button {
+	  padding: 10px 16px;
+	  font-size: 14px;
+	}
     .pile {
 	  width:80px;
 	  min-height:110px;   /* ⭐ height → min-height */
@@ -69,50 +107,83 @@
 	  animation: firework 1.2s ease-out forwards;
 	}
 	
+	/* 모바일 대응 예시 */
+	@media (max-width: 600px) {
+	  /* 하단 버튼 바 */
+	  #actionBarBottom {
+		width: calc(100% - 24px); /* 화면 양쪽 여백 */
+		bottom: calc(16px + env(safe-area-inset-bottom));
+	  }
+
+	  #actionBarBottom button {
+		width: 100%;
+		padding: 18px 0;
+		font-size: 18px;
+		border-radius: 12px;
+	  }
+
+	  /* 상단 action bar도 모바일 정렬 */
+	  #actionBarTop {
+		width: 100%;
+		flex-direction: column;
+		gap: 12px;
+	  }
+
+	  #leftBtn {
+		display: flex;
+		gap: 8px;
+	  }
+
+	  #leftBtn button,
+	  #autoCompleteBtn {
+		flex: 1;
+	  }
+	  .pile {
+		width:100px;
+		min-height:140px;
+	  }
+	  .card {
+		width:100px;
+		height:140px;
+	  }
+	  .card .label {
+		font-size:16px;
+	  }
+
+	  #undoBtn, #refreshBtn, #autoCompleteBtn {
+		padding:16px 20px;
+		font-size:18px;
+	  }
+	}
+	
   </style>
 </head>
 <body>
   <h1>🃏 솔리테어 (클론다이크)</h1>
-  <div class="board">
-    <div class="row" id="top">
-      <div class="pile" id="stock"></div>
-      <div class="pile" id="waste"></div>
-      <div style="flex:1"></div>
-      <div class="pile foundation" data-suit="♠"></div>
-      <div class="pile foundation" data-suit="♥"></div>
-      <div class="pile foundation" data-suit="♦"></div>
-      <div class="pile foundation" data-suit="♣"></div>
-    </div>
-    <div class="row" id="tableau"></div>
-  </div>
-  
-  <button id="refreshBtn" style="
-		position: fixed;
-		bottom: 20px;
-		left: 20px;
-		z-index: 1000;
-		padding: 10px 16px;
-		font-size: 14px;
-	">🔄 새로고침</button>
-
-  <button id="undoBtn" style="
-		position:fixed;
-		bottom:20px;
-		right:20px;
-		z-index:1000;
-		padding:10px 16px;
-		font-size:14px;
-	">↩️ 실행취소</button>
+	<div id ="actionBarTop">
+		<div id = "leftBtn">
+		  <button id="refreshBtn">🔄새로고침🔄</button>
+		  <button id="undoBtn">↩️ 실행취소</button>
+		</div>
+	  <button id="autoCompleteBtn">🎆자동완성🎆</button>
+	</div>
 	
-	<button id="autoCompleteBtn" style="
-		position:fixed;
-		top:20px;
-		right:20px;
-		z-index:1000;
-		padding:10px 16px;
-		font-size:14px;
-		display:none;
-	">🧪 자동완성</button>
+  <div class="board">	
+    <div class="row" id="top">
+	  <div class="pile" id="stock" style="grid-column:1"></div>
+	  <div class="pile" id="waste" style="grid-column:2"></div>
+
+	  <div class="pile foundation" data-suit="♠" style="grid-column:4"></div>
+	  <div class="pile foundation" data-suit="♥" style="grid-column:5"></div>
+	  <div class="pile foundation" data-suit="♦" style="grid-column:6"></div>
+	  <div class="pile foundation" data-suit="♣" style="grid-column:7"></div>
+	</div>	
+    <div class="row" id="tableau"></div>
+	
+	<div id="actionBarBottom">
+		<button id="testAutoBtn">🎆자동완성테스트</button>
+	</div>
+
   <!-- 승리 오버레이 UI -->
   <div id="winOverlay" style="
 	  display:none;
@@ -283,6 +354,7 @@ function render() {
 
 //카드 쌓기
 function cardEl(card, fromInfo) {
+	
   const d = document.createElement('div');
   d.className = 'card ' + ((card.suit==='♥'||card.suit==='♦')?'red':'');
 
@@ -322,6 +394,7 @@ function cardEl(card, fromInfo) {
 
 //카드 뽑기
 function drawCard() {
+  saveHistory();
   if (!stock.length) {
     if (!waste.length) return;
 
@@ -399,13 +472,10 @@ function onCardClick(card, from) {
 }
 
 function onPileClick(to) {
-  if (!selectedCard) return;
-  
-  saveHistory(); // ⭐ 이동 전에 상태 저장
-
+  if (!selectedCard) return;  
   const stack = getMoveStack();
   if (canMove(stack[0], selectedFrom, to)) {
-
+	saveHistory(); // ⭐ 이동 전에 상태 저장
     // 🔹 출발지 제거
     if (selectedFrom.type === 'tableau') {
       const col = tableau[selectedFrom.index];
@@ -438,18 +508,13 @@ function onPileClick(to) {
 
 //foundation 규칙 함수
 function canMoveToFoundation(card, to) {
-  const pile = foundations[to.suit];
+  saveHistory();
+  const f = foundations[card.suit];
 
-  // 빈 foundation → A만 가능
-  if (pile.length === 0) {
-	return card.value === 'A' && card.suit === to.suit;
-  }
+  if (f.length === 0) return card.value === 'A';
 
-  const top = pile[pile.length - 1];
-  return (
-    card.suit === to.suit &&
-    valueNum(card.value) === valueNum(top.value) + 1
-  );
+  const order = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  return order.indexOf(card.value) === order.indexOf(f[f.length - 1].value) + 1;
 }
 
 //foundation 클릭 처리
@@ -604,33 +669,23 @@ function autoMoveToFoundation(card, from) {
 }
 
 function allCardsFaceUp() {
-  // tableau 모든 카드 확인
-  const tableauUp = tableau.flat().every(c => c.faceUp);
-  // waste 카드 확인
-  const wasteUp = waste.every(c => c.faceUp);
-  // stock은 기본적으로 뒤집혀 있음 → stock이 비어 있으면 신경 안 써도 됨
-  return tableauUp && wasteUp;
+  return (
+    stock.length === 0 && 
+    tableau.flat().every(c => c.faceUp) &&
+    waste.every(c => c.faceUp)
+  );
 }
 
 function updateAutoCompleteButton() {
-  let btn = document.getElementById('autoCompleteBtn');
-  
+  const btn = document.getElementById('autoCompleteBtn');
   if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'autoCompleteBtn';
-    btn.textContent = '🧪 자동완성';
-    btn.style.position = 'fixed';
-    btn.style.top = '20px';
-    btn.style.right = '20px';
-    btn.style.zIndex = '1000';
-    btn.style.padding = '10px 16px';
-    btn.style.fontSize = '14px';
-    btn.onclick = autoComplete; // 클릭 시 자동완성 실행
-    document.body.appendChild(btn);
+    return;
   }
 
-  // 모든 카드가 앞면이면 표시, 아니면 숨김
-  btn.style.display = allCardsFaceUp() ? 'block' : 'none';
+  const available = isAutoCompleteAvailable();
+ 
+  btn.style.display = available ? 'block' : 'none';
+  btn.onclick = autoComplete;
 }
 
 // 모든 카드가 앞면일 때만 버튼 보이기
@@ -640,23 +695,25 @@ function checkAllFaceUp() {
 
 //자동 완성
 function autoComplete() {
+  saveHistory();
   let moved;
-
   do {
     moved = false;
-
     // 1️⃣ tableau → foundation
-    tableau.forEach((col, colIdx) => {
+    tableau.forEach(col => {
       if (!col.length) return;
-      const card = col[col.length - 1]; // 맨 위 카드
-      for (let suit of suits) {
-        const target = { type: 'foundation', suit };
-        if (canMoveToFoundation(card, target)) {
-          col.pop();
-          foundations[suit].push(card);
-          moved = true;
-          if (col.length && !col[col.length - 1].faceUp)
-            col[col.length - 1].faceUp = true;
+
+      const card = col[col.length - 1];
+      const suit = card.suit;
+      const target = { type: 'foundation', suit };
+
+      if (canMoveToFoundation(card, target)) {
+        col.pop();
+        foundations[suit].push(card);
+        moved = true;
+
+        if (col.length && !col[col.length - 1].faceUp) {
+          col[col.length - 1].faceUp = true;
         }
       }
     });
@@ -664,20 +721,20 @@ function autoComplete() {
     // 2️⃣ waste → foundation
     if (waste.length) {
       const card = waste[waste.length - 1];
-      for (let suit of suits) {
-        const target = { type: 'foundation', suit };
-        if (canMoveToFoundation(card, target)) {
-          waste.pop();
-          foundations[suit].push(card);
-          moved = true;
-        }
+      const suit = card.suit;
+      const target = { type: 'foundation', suit };
+
+      if (canMoveToFoundation(card, target)) {
+        waste.pop();
+        foundations[suit].push(card);
+        moved = true;
       }
     }
 
     render();
   } while (moved);
 
-  checkWin(); // ✅ 끝나면 WIN 체크
+  checkWin();
 }
 
 //승리 조건
@@ -795,27 +852,46 @@ document.addEventListener('touchmove', e => {
 document.addEventListener('touchend', e => {
     if (!touchStartCard) return;
 
-    const el = document.querySelector(`.card[data-card-id='${touchStartCard.id}']`);
-    el.style.transform = ''; // 위치 초기화
+    const el = document.querySelector(
+      `.card[data-card-id='${touchStartCard.id}']`
+    );
+    el.style.transform = '';
 
     const touch = e.changedTouches[0];
     const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-    let targetPile = targetEl.closest('.pile');
+    let targetPile = targetEl?.closest('.pile');
 
-    if (targetPile) {
-        if (targetPile.id === 'stock' || targetPile.id === 'waste') {
-            // 이동 불가
-        } else if (targetPile.classList.contains('foundation')) {
-            const to = { type:'foundation', suit: targetPile.dataset.suit };
-            selectedCard = touchStartCard;
-            selectedFrom = touchStartFrom;
-            onFoundationClick(to);
-        } else if (targetPile.parentElement.id === 'tableau') {
-            const to = { type:'tableau', index: Array.from(document.querySelectorAll('#tableau .pile')).indexOf(targetPile) };
-            selectedCard = touchStartCard;
-            selectedFrom = touchStartFrom;
-            onPileClick(to);
-        }
+    // =============================
+    // ⭐ 1️⃣ foundation 위에 드롭
+    // =============================
+    if (targetPile?.classList.contains('foundation')) {
+        selectedCard = touchStartCard;
+        selectedFrom = touchStartFrom;
+        onFoundationClick({
+            type: 'foundation',
+            suit: targetPile.dataset.suit
+        });
+    }
+
+    // =============================
+    // ⭐ 2️⃣ tableau 위에 드롭
+    // =============================
+    else if (targetPile?.parentElement?.id === 'tableau') {
+        selectedCard = touchStartCard;
+        selectedFrom = touchStartFrom;
+        onPileClick({
+            type: 'tableau',
+            index: Array.from(
+              document.querySelectorAll('#tableau .pile')
+            ).indexOf(targetPile)
+        });
+    }
+
+    // =============================
+    // ⭐ 3️⃣ 그냥 탭 → foundation 자동 이동
+    // =============================
+    else {
+        autoMoveToFoundation(touchStartCard, touchStartFrom);
     }
 
     touchStartCard = null;
@@ -843,6 +919,75 @@ function findCardFrom(card) {
     return null;
 }
 
+document.getElementById('testAutoBtn').onclick = () => {
+  forceAutoCompleteTest();
+};
+
+function forceAutoCompleteTest() {
+  // 전체 카드 수집
+  const all = [
+    ...stock,
+    ...waste,
+    ...tableau.flat(),
+    ...Object.values(foundations).flat()
+  ];
+
+  // 초기화
+  stock = [];
+  waste = [];
+  tableau = [[], [], [], [], [], [], []];
+  foundations = { '♠': [], '♥': [], '♦': [], '♣': [] };
+
+  // value 정렬용
+  const order = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+  // 슈트별 분리
+  const bySuit = { '♠':[], '♥':[], '♦':[], '♣':[] };
+  all.forEach(c => {
+    c.faceUp = true;
+    bySuit[c.suit].push(c);
+  });
+
+  // foundation에 A~Q 순서로 넣기
+  Object.keys(bySuit).forEach(suit => {
+    bySuit[suit]
+      .sort((a,b) => order.indexOf(a.value) - order.indexOf(b.value))
+      .forEach(card => {
+        if (card.value !== 'K') {
+          foundations[suit].push(card);
+        }
+      });
+  });
+
+  // K는 tableau에 하나씩
+  Object.keys(bySuit).forEach((suit, i) => {
+    const king = bySuit[suit].find(c => c.value === 'K');
+    if (king) tableau[i].push(king);
+  });
+
+  render();
+  updateAutoCompleteButton();
+}
+
+function isAutoCompleteAvailable() {
+  if (stock.length > 0) {
+    return false;
+  }
+
+  if (waste.length > 0) {
+    return false;
+  }
+
+  // tableau 모든 카드 앞면 확인
+  for (let i = 0; i < tableau.length; i++) {
+    for (let j = 0; j < tableau[i].length; j++) {
+      if (!tableau[i][j].faceUp) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 createDeck();
 deal();
 render();

@@ -5,9 +5,13 @@
   <title>Solitaire (Klondike)</title>
   <style>
 	:root {
-	  --card-w: clamp(72px, 14vw, 110px);
+	  --card-w: clamp(72px, 14vw, 120px);
 	  --card-h: calc(var(--card-w) * 1.4);
 	  --card-gap: clamp(6px, 2vw, 12px);
+	  
+	  --tableau-w: calc(
+		(var(--card-w) * 7) + var(--card-gap) * 6)
+	  );
 	}
     body { background:#0b6623; color:#fff; font-family:sans-serif; 
 		   overscroll-behavior: none; max-width: 100vw; overflow-x: hidden;}
@@ -25,17 +29,20 @@
 	  gap: var(--card-gap);
 	}
 	#actionBarTop {
-	  width: 655px;
+	  width: var(--tableau-w);
 	  display: flex;
 	  justify-content: space-between;
 	  margin-top: 12px;
+	  Padding-left: 20px;
+	  Padding-right: 20px;	  
 	}
 	#actionBarTop button {
-	  padding: 10px 16px;
-	  font-size: 14px;
+	  padding: 10px 10px;
+	  font-size: 20px;
 	}
 	#leftBtn{
-		justify-content: space-between;
+	  justify-content: space-between;
+	  lefe: 10px;	  
 	}
 	#actionBarBottom {
 	  position: fixed;
@@ -66,26 +73,49 @@
 	  outline: 1px solid black;
 	  cursor: grab;
 	}
-	
 	.card:active {
 	  cursor: grabbing;
 	}
-
 	.card .label {
-	  position:absolute;
-	  top:6px;
-	  left:6px;
-	  font-size:14px;
-	  font-weight:bold;
-	  color: #000;
-	}
+	  position: absolute;
+	  top: 8px;
+	  left: 8px;
+	  font-size: clamp(16px, 4vw, 22px);
+	  font-weight: 800;
+	  line-height: 1;
+	  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+	}	
+	.red { color: #c60000; }
+	.black { color: #111; }
+    .center-suit {
+	  position: absolute;
+	  inset: 0;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
 
-	.red .label {
-	  color:red;
+	  font-size: clamp(44px, 14vw, 72px);
+	  opacity: 0.95;
+	  font-weight: 900;
+	  pointer-events: none;
+	  user-select: none;	  
 	}
-
-    .red { color:red; }
-    .back { background:#1e90ff; }
+	.center-suit.red {
+	  color: rgb(200, 0, 40);   /* 진한 레드 */
+	}
+	.center-suit.black {
+	  color: rgb(10, 10, 10);   /* 거의 블랙 */
+	}
+	.back {
+	  background: repeating-linear-gradient(
+		45deg,
+		#1e90ff,
+		#1e90ff 10px,
+		#1565c0 10px,
+		#1565c0 20px
+	  );
+	}
+	
 	.selected {
 	  outline: 3px solid gold;
 	  outline-offset: -3px;
@@ -172,7 +202,7 @@
 	<div id ="actionBarTop">
 		<div id = "leftBtn">
 		  <button id="refreshBtn">🔄새로고침🔄</button>
-		  <button id="undoBtn">↩️ 실행취소</button>
+		  <button id="undoBtn">↩️실행취소️↩️</button>
 		</div>
 	  <button id="autoCompleteBtn">🎆자동완성🎆</button>
 	</div>
@@ -325,7 +355,6 @@ function render() {
 	  tab.appendChild(p);
 	});
 
-
   /* =====================
      foundation 렌더
      ===================== */
@@ -346,7 +375,7 @@ function render() {
 		hint.style.display = 'flex';
 		hint.style.alignItems = 'center';
 		hint.style.justifyContent = 'center';
-		hint.style.fontSize = '36px';
+		hint.style.fontSize = '60px';
 		hint.style.opacity = '0.3';
 		hint.textContent = suit;
 		f.appendChild(hint);
@@ -361,19 +390,26 @@ function render() {
 	createUndoButton(); // 항상 버튼 생성
 }
 
-//카드 쌓기
+//카드 만들기
 function cardEl(card, fromInfo) {
 	
   const d = document.createElement('div');
-  d.className = 'card ' + ((card.suit==='♥'||card.suit==='♦')?'red':'');
+  d.className = 'card ' + ((card.suit==='♥'||card.suit==='♦') ? 'red' : 'black');
 
   if (!card.faceUp) d.classList.add('back');
 
   if (card.faceUp) {
+    // 좌상단 숫자 + 무늬
     const label = document.createElement('div');
     label.className = 'label';
     label.textContent = card.value + card.suit;
     d.appendChild(label);
+
+    // 중앙 큰 무늬
+    const center = document.createElement('div');
+    center.className = 'center-suit';
+    center.textContent = card.suit;
+    d.appendChild(center);
   }
 
   // 마우스 클릭 이벤트
@@ -398,7 +434,7 @@ function cardEl(card, fromInfo) {
 
   d.setAttribute('data-card-id', card.id); // 터치용 ID
 
-  return d; // ← 여기서 return 해야 안전
+  return d;
 }
 
 //카드 뽑기

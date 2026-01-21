@@ -14,9 +14,51 @@
 	  );
 	}
     body { background:#0b6623; color:#fff; font-family:sans-serif; 
-		   overscroll-behavior: none; max-width: 100vw; overflow-x: hidden;}
+		   overscroll-behavior: none; max-width: 100vw; overflow-x: hidden; position: relative; /* ⭐ 여기 필수 */}
     .board { display:flex; flex-direction:column; gap:20px; padding:20px; width:40%;}
     .row { display:flex; gap:12px; }
+	.timer {
+	  position: absolute;
+	  top: 10px; /* 카드 위쪽에 살짝 띄우기, 필요에 따라 조정 */
+	  left: calc(var(--card-w) * 6 + var(--card-gap) * 6); /* 7번째 카드 위치 */
+	  width: var(--card-w); /* 카드 폭과 동일 */
+	  text-align: center;   /* 가운데 정렬 */
+	  font-size: 20px;
+	  font-weight: bold;
+	  background: rgba(255,255,255,0.8);
+	  color: #222;
+	  padding: 10px;
+	  border-radius: 4px;
+	  pointer-events: none;
+	  z-index: 500;
+	}
+	.win-overlay {
+	  position: fixed;
+	  inset: 0;
+	  background: rgba(0,0,0,0.65);
+	  display: none;
+	  align-items: center;
+	  justify-content: center;
+	  z-index: 999;
+	}
+	.win-box {
+	  background: #fff;
+	  color: #222;
+	  padding: 32px 40px;
+	  border-radius: 12px;
+	  text-align: center;
+	  min-width: 260px;
+	}
+	.win-box h1 {
+	  margin: 0 0 12px;
+	}
+	.win-box button {
+	  margin-top: 16px;
+	  padding: 8px 16px;
+	  font-size: 15px;
+	  cursor: pointer;
+	}
+
 	#top {
 	  display: grid;
 	  grid-template-columns: repeat(7, var(--card-w));
@@ -28,29 +70,34 @@
 	  grid-template-columns: repeat(7, var(--card-w));
 	  gap: var(--card-gap);
 	}
-	#actionBarTop {
+	#actionBarBottom {
 	  width: var(--tableau-w);
+	  position: fixed;
+	  bottom: 20px;
 	  display: flex;
 	  justify-content: space-between;
 	  margin-top: 12px;
-	  Padding: 0 20px;
-	}
-	#actionBarTop button {
-	  padding: 10px 10px;
-	  font-size: 20px;
-	}
-	#actionBarBottom {
-	  position: fixed;
-	  bottom: 20px;
-	  left: 20px;
-	  width: 655px;
-	  display: flex;
 	  z-index: 1000;
 	}
 	#actionBarBottom button {
-	  padding: 10px 16px;
-	  font-size: 14px;
+	  min-width: 120px;
+	  padding: 10px 10px;
+	  font-size: 20px;
 	}
+	
+	.hint {
+	  box-shadow:
+		0 0 0 5px gold inset,
+		0 0 28px 12px rgba(255, 215, 0, 1);
+	  animation: hintPulse 0.7s infinite;
+	  z-index: 100;							
+	}	
+	@keyframes hintPulse {
+	  0%   { box-shadow: 0 0 0 5px gold inset, 0 0 16px rgba(255,215,0,0.9); }
+	  50%  { box-shadow: 0 0 0 5px gold inset, 0 0 32px rgba(255,215,0,1); }
+	  100% { box-shadow: 0 0 0 5px gold inset, 0 0 16px rgba(255,215,0,0.9); }
+	}
+	
     .pile {
 	  width: var(--card-w);
 	  min-height: var(--card-h);
@@ -65,7 +112,7 @@
 	  background:#fff;
 	  position:absolute;
 	  cursor:pointer;
-	  outline: 1px solid black;
+	  outline: 3px solid black;
 	  cursor: grab;
 	}
 	.card:active {
@@ -73,9 +120,8 @@
 	}
 	.card .label {
 	  position: absolute;
-	  top: 8px;
-	  left: 8px;
-	  font-size: clamp(30px, 4vw, 30px);
+	  right: 8px;
+	  font-size: clamp(50px, 4vw, 30px);
 	  font-weight: 800;
 	  line-height: 1;
 	  text-shadow: 0 1px 0 rgba(255,255,255,0.6);	  
@@ -86,9 +132,8 @@
 	  position: absolute;
 	  inset: 0;
 	  display: flex;
-	  align-items: center;
+	  align-items: end;
 	  justify-content: center;
-
 	  font-size: clamp(100px, 14vw, 72px);
 	  opacity: 0.95;
 	  font-weight: 900;
@@ -111,11 +156,6 @@
 	  );
 	}
 	
-	.selected {
-	  outline: 3px solid gold;
-	  outline-offset: -3px;
-	}
-	
 	@keyframes firework {
 	  0% {
 		transform: translate(0,0) rotate(0deg);
@@ -131,7 +171,6 @@
 		opacity: 0;
 	  }
 	}
-
 	.firework {
 	  animation: firework 1.2s ease-out forwards;
 	}
@@ -148,35 +187,25 @@
 		touch-action: manipulation;   /* 탭 시 확대 방지 */
 		-ms-touch-action: manipulation; /* IE/Edge 대응 */
 		overscroll-behavior: none;   /* 스크롤 튐 방지 */
-		}
-	  /* 하단 버튼 바 */
+		}	  
 	  #actionBarBottom {
-		width: calc(100% - 24px); /* 화면 양쪽 여백 */
-		bottom: calc(16px + env(safe-area-inset-bottom));
-	  }
-	  #actionBarBottom button {
-		width: 100%;
-		padding: 18px 0;
-		font-size: 18px;
-		border-radius: 12px;
-	  }
-
-	  /* 상단 action bar도 모바일 정렬 */
-	  #actionBarTop {
 		width: 100%;
 		flex-direction: column;
 		gap: 12px;
 	  }
-
 	  #leftBtn {
 		display: flex;
 		gap: 8px;
 	  }
-
 	  #leftBtn button,
 	  #autoCompleteBtn {
 		flex: 1;
 	  }
+	  #undoBtn, #refreshBtn, #autoCompleteBtn, #hintBtn {
+		padding:16px 20px;
+		font-size:18px;
+	  }
+	  
 	  .pile {
 		width:100px;
 		min-height:140px;
@@ -187,63 +216,59 @@
 	  }
 	  .card .label {
 		font-size:16px;
-	  }
-
-	  #undoBtn, #refreshBtn, #autoCompleteBtn {
-		padding:16px 20px;
-		font-size:18px;
-	  }
+	  }	  
 	}	
   </style>
 </head>
 <body>
   <h1>🃏 솔리테어 (클론다이크)</h1>
-	<div id ="actionBarTop">
-		<div id = "leftBtn">
-		  <button id="refreshBtn">🔄새로고침🔄</button>
-		  <button id="undoBtn">↩️실행취소️↩️</button>
-		</div>
-	  <button id="autoCompleteBtn">🎆자동완성🎆</button>
-	</div>
+	<div id="timer" class="timer">⏱ 00:00</div>
+	<br/>
+	<button id="testAutoBtn">🎆자동완성테스트</button>
 	
   <div class="board">	
     <div class="row" id="top">
-	  <div class="pile" id="stock" style="grid-column:1"></div>
-	  <div class="pile" id="waste" style="grid-column:2"></div>
-
-	  <div class="pile foundation" data-suit="♠" style="grid-column:4"></div>
-	  <div class="pile foundation" data-suit="♥" style="grid-column:5"></div>
-	  <div class="pile foundation" data-suit="♦" style="grid-column:6"></div>
-	  <div class="pile foundation" data-suit="♣" style="grid-column:7"></div>
+	  <div class="pile foundation" data-suit="♠" style="grid-column:1"></div>
+	  <div class="pile foundation" data-suit="♥" style="grid-column:2"></div>
+	  <div class="pile foundation" data-suit="♦" style="grid-column:3"></div>
+	  <div class="pile foundation" data-suit="♣" style="grid-column:4"></div>
+	  
+	  <div class="pile" id="waste" style="grid-column:6"></div>
+	  <div class="pile" id="stock" style="grid-column:7"></div>
 	</div>	
     <div class="row" id="tableau"></div>
 	
-	<div id="actionBarBottom">
-		<button id="testAutoBtn">🎆자동완성테스트</button>
+	<div id ="actionBarBottom">
+		<div id = "leftBtn">
+		  <button id="refreshBtn">🔄새로고침</button>
+		  <button id="undoBtn">↩️실행취소️</button>
+		  <button id="hintBtn">💡힌트</button>		  
+		</div>
+	  <button id="autoCompleteBtn">🎆자동완성🎆</button>
 	</div>
 
-  <!-- 승리 오버레이 UI -->
-  <div id="winOverlay" style="
-	  display:none;
-	  position:fixed;
-	  inset:0;
-	  background:rgba(0,0,0,0.6);
-	  z-index:999;
-	  color:#fff;
-	  font-size:48px;
-	  font-weight:bold;
-	  align-items:center;
-	  justify-content:center;
-	  flex-direction:column;
-	">
-	  🎉 CLEAR!
-	  <button onclick="location.reload()" style="
-		margin-top:20px;
-		font-size:18px;
-		padding:10px 20px;
-		cursor:pointer;
-	  ">다시하기</button>
+	<!-- 승리 오버레이 UI -->	
+	<div id="winOverlay" class="win-overlay">
+	  <div class="win-box">
+		<h1>🎉CLEAR!</h1>
+		<p id="winTime"></p>
+		<button onclick="location.reload()" style="
+			margin-top:20px;
+			font-size:18px;
+			padding:10px 20px;
+			cursor:pointer;
+		  ">다시하기</button>
+		</div>
+	  </div>
 	</div>
+
+	<!-- 힌트 오버레이 -->
+	<div id="hintOverlay" style="
+	  position: fixed;
+	  inset: 0;
+	  pointer-events: none;
+	  z-index: 2000;
+	"></div>
 <script>
 const suits = ['♠','♥','♦','♣'];
 const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -258,10 +283,54 @@ let foundations = {
   '♦': [],
   '♣': []
 };
+let startTime = null;
+let timerInterval = null;
+
+//힌트 순환을 위한 상태 변수
+let hintList = [];
+let hintIndex = 0;
+let usedHints = new Set();
+let currentHint = null;
+let movedOnce = false;
 
 document.getElementById('refreshBtn').onclick = () => {
     location.reload();
 };
+
+// 타이머 시작 시 + 매 초 위치 갱신
+function startTimer() {
+  startTime = Date.now();
+  const timerEl = document.getElementById('timer');
+
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    updateTimerUI(elapsed);
+    updateTimerPosition(); // ⭐ 위치 갱신
+  }, 1000);
+}
+
+//타이머 정지(승리)
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+//시간표시
+function updateTimerUI(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const min = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const sec = String(totalSec % 60).padStart(2, '0');
+
+  document.getElementById('timer').textContent = `⏱ ${min}:${sec}`;
+}
+
+//게임시작
+function startGame() {
+  createDeck();
+  deal();
+  render();
+  startTimer();
+}
 
 //덱 생성
 function createDeck() {
@@ -342,10 +411,10 @@ function render() {
 
 		if (!card.faceUp) {
 		  el.style.top = topOffset + 'px';
-		  topOffset += 20;   // 뒤집힌 카드
+		  topOffset += 30;   // 뒤집힌 카드
 		} else {
 		  el.style.top = topOffset + 'px';
-		  topOffset += 30;   // 펼쳐진 카드
+		  topOffset += 55;   // 펼쳐진 카드
 		}
 
 		p.appendChild(el);
@@ -374,7 +443,7 @@ function render() {
 		hint.style.display = 'flex';
 		hint.style.alignItems = 'center';
 		hint.style.justifyContent = 'center';
-		hint.style.fontSize = '60px';
+		hint.style.fontSize = '100px';
 		hint.style.opacity = '0.3';
 		hint.textContent = suit;
 		f.appendChild(hint);
@@ -401,7 +470,7 @@ function cardEl(card, fromInfo) {
     // 좌상단 숫자 + 무늬
     const label = document.createElement('div');
     label.className = 'label';
-    label.textContent = card.value + card.suit;
+    label.textContent = card.value;
     d.appendChild(label);
 
     // 중앙 큰 무늬
@@ -427,9 +496,6 @@ function cardEl(card, fromInfo) {
 
   d.draggable = card.faceUp;
   d.ondragstart = (e) => { selectedCard = card; selectedFrom = fromInfo; e.dataTransfer.setData('text/plain', card.id); };
-
-  // 카드 선택 표시
-  if (selectedCard && selectedCard.id === card.id) d.classList.add('selected');
 
   d.setAttribute('data-card-id', card.id); // 터치용 ID
 
@@ -482,8 +548,15 @@ function canMove(card, from, to) {
 
 //카드 선택
 function onCardClick(card, from) {
+  clearHints();
   if (!card.faceUp) return;
 
+  // ⭐ 원클릭 자동 이동 시도
+  if (!selectedCard) {
+    const moved = autoMoveByOneClick(card, from);
+    if (moved) return;   // 이동했으면 여기서 종료
+  }
+  
   // 1️⃣ 선택
   if (!selectedCard) {
     selectedCard = card;
@@ -543,6 +616,9 @@ function onPileClick(to) {
 	
     // 🔹 목적지에 여러 장 추가
     tableau[to.index].push(...stack);
+	// ⭐ 힌트 소비 처리
+	markHintUsedIfMatched(stack[0], to);
+	movedOnce = true;
   }
 
   selectedCard = null;
@@ -552,14 +628,18 @@ function onPileClick(to) {
 
 //foundation 규칙 함수
 function canMoveToFoundation(card, to) {
-  saveHistory();
-  const f = foundations[card.suit];
+  // ⭐ 무늬 불일치 방어
+  if (card.suit !== to.suit) return false;
+
+  const f = foundations[to.suit];
 
   if (f.length === 0) return card.value === 'A';
 
   const order = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-  return order.indexOf(card.value) === order.indexOf(f[f.length - 1].value) + 1;
+  return order.indexOf(card.value) ===
+         order.indexOf(f[f.length - 1].value) + 1;
 }
+
 
 //foundation 클릭 처리
 function onFoundationClick(to) {
@@ -580,10 +660,12 @@ function onFoundationClick(to) {
     if (selectedFrom.type === 'waste') {
       waste.pop();
     }
+	markHintUsedIfMatched(selectedCard, to);
 
     // 🔹 foundation에 추가
     foundations[to.suit].push(selectedCard);
-	checkWin();
+	movedOnce = true;
+	checkWin();	
   }
 
   selectedCard = null;
@@ -684,32 +766,29 @@ function undoMove() {
 function autoMoveToFoundation(card, from) {
   if (!card.faceUp) return;
 
-  for (let suit of suits) {
-    const to = { type:'foundation', suit };
+  const suit = card.suit;
+  const to = { type:'foundation', suit };
 
-    if (canMoveToFoundation(card, to)) {
+  if (!canMoveToFoundation(card, to)) return;
 
-      // 출발지 제거
-      if (from.type === 'tableau') {
-        const col = tableau[from.index];
-        col.pop();
-
-        if (col.length && !col[col.length - 1].faceUp) {
-          col[col.length - 1].faceUp = true;
-        }
-      }
-
-      if (from.type === 'waste') {
-        waste.pop();
-      }
-
-      foundations[suit].push(card);
-      selectedCard = null;
-      selectedFrom = null;
-      render();
-      return;
+  // 출발지 제거
+  if (from.type === 'tableau') {
+    const col = tableau[from.index];
+    col.pop();
+    if (col.length && !col[col.length - 1].faceUp) {
+      col[col.length - 1].faceUp = true;
     }
   }
+
+  if (from.type === 'waste') {
+    waste.pop();
+  }
+
+  foundations[suit].push(card); // ✅ 항상 같은 무늬
+  movedOnce = true;
+  selectedCard = null;
+  selectedFrom = null;
+  render();
 }
 
 function allCardsFaceUp() {
@@ -740,6 +819,7 @@ function checkAllFaceUp() {
 //자동 완성
 function autoComplete() {
   saveHistory();
+  clearHints();
   let moved;
   do {
     moved = false;
@@ -824,7 +904,16 @@ function cardFirework() {
 
 //승리 표시
 function showWin() {
-  cardFirework();   // 🎆 먼저 터트리고
+  topTimer();            // 타이머 정지
+  cardFirework();         // 카드 폭죽
+
+  const elapsed = Date.now() - startTime;
+  const totalSec = Math.floor(elapsed / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+
+  document.getElementById('winTime').textContent =
+    `클리어 시간: ${min}분 ${sec}초`;
 
   const o = document.getElementById('winOverlay');
   o.style.display = 'flex';
@@ -832,7 +921,6 @@ function showWin() {
   document.body.style.pointerEvents = 'none';
   o.style.pointerEvents = 'auto';
 }
-
 
 //테스트
 function forceWin() {
@@ -935,11 +1023,13 @@ document.addEventListener('touchend', e => {
     // ⭐ 3️⃣ 그냥 탭 → foundation 자동 이동
     // =============================
     else {
-        autoMoveToFoundation(touchStartCard, touchStartFrom);
+        if (!movedOnce) {
+		  autoMoveToFoundation(touchStartCard, touchStartFrom);
+		}
     }
-
     touchStartCard = null;
     touchStartFrom = null;
+	movedOnce = false;
 });
 
 // 헬퍼: 카드 ID → 카드 객체
@@ -1032,9 +1122,201 @@ function isAutoCompleteAvailable() {
   }
   return true;
 }
-createDeck();
-deal();
-render();
+
+//자동 목적지 찾기
+function autoMoveByOneClick(card, from) {
+  if (!card.faceUp) return false;
+
+  // 🔹 1. foundation 우선
+  const fTarget = { type:'foundation', suit: card.suit };
+  if (canMoveToFoundation(card, fTarget)) {
+    saveHistory();
+    selectedCard = card;
+    selectedFrom = from;
+    onFoundationClick(fTarget);
+    return true;
+  }
+
+  // 🔹 2. tableau 탐색
+  for (let i = 0; i < tableau.length; i++) {
+    const to = { type:'tableau', index: i };
+    if (canMove(card, from, to)) {
+      saveHistory();
+      selectedCard = card;
+      selectedFrom = from;
+      onPileClick(to);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+//이전에 표시된 모든 힌트 강조 제거
+function clearHints() {
+  document.querySelectorAll('.hint').forEach(el => {
+    el.classList.remove('hint');
+  });
+}
+
+//전역 힌트 로직
+function showGlobalHint() {
+  clearHints();
+
+  const available = collectAllHints()
+    .filter(h => !usedHints.has(hintKey(h)));
+
+	if (!available.length) {
+		const stockEl = document.getElementById('stock');
+
+		if (stock.length || waste.length) {
+		clearHintOverlay();
+		showHintOverlay(stockEl); // ⭐️ 여기!
+		}
+
+		currentHint = null;
+		return;
+	}
+
+  currentHint = available[hintIndex % available.length];
+  hintIndex++;
+
+  const card = findCardById(currentHint.cardId);
+  highlightMove(card, currentHint.from, currentHint.to);  
+}
+
+//힌트일 때만 기록
+function markHintUsedIfMatched(card, to) {
+  if (!currentHint) return;
+
+  if (
+    card.id === currentHint.cardId &&
+    JSON.stringify(to) === JSON.stringify(currentHint.to)
+  ) {
+    usedHints.add(hintKey(currentHint));
+    currentHint = null;
+  }
+}
+
+// 이동 경로 하이라이트
+function highlightMove(card, from, to) {
+  clearHintOverlay();
+
+  // 🔹 이동 카드
+  const cardEl = document.querySelector(
+    `.card[data-card-id='${card.id}']`
+  );
+  if (cardEl) showHintOverlay(cardEl);
+
+  // 🔹 목적지
+  if (to.type === 'foundation') {
+    const f = document.querySelector(
+      `.foundation[data-suit='${to.suit}']`
+    );
+    showHintOverlay(f.querySelector('.card:last-child') || f);
+  }
+
+  if (to.type === 'tableau') {
+    const col = tableau[to.index];
+    if (col.length) {
+      const top = document.querySelector(
+        `.card[data-card-id='${col[col.length - 1].id}']`
+      );
+      showHintOverlay(top);
+    } else {
+      showHintOverlay(
+        document.querySelectorAll('#tableau .pile')[to.index]
+      );
+    }
+  }
+}
+
+
+//모든 힌트 수집 함수
+function collectAllHints() {
+  const hints = [];
+
+  // tableau → tableau / foundation
+  for (let i = 0; i < tableau.length; i++) {
+    const col = tableau[i];
+    if (!col.length) continue;
+
+    const card = col[col.length - 1];
+    const from = { type:'tableau', index:i };
+
+    // foundation
+    if (canMoveToFoundation(card, { type:'foundation', suit:card.suit })) {
+      hints.push({ cardId: card.id, from, to:{ type:'foundation', suit:card.suit } });
+    }
+
+    // tableau
+    for (let j = 0; j < tableau.length; j++) {
+      if (i === j) continue;
+      const to = { type:'tableau', index:j };
+      if (canMove(card, from, to)) {
+        hints.push({ cardId: card.id, from, to });
+      }
+    }
+  }
+
+  // waste → tableau / foundation
+  if (waste.length) {
+    const card = waste[waste.length - 1];
+    const from = { type:'waste' };
+
+    if (canMoveToFoundation(card, { type:'foundation', suit:card.suit })) {
+      hints.push({ cardId: card.id, from, to:{ type:'foundation', suit:card.suit } });
+    }
+
+    for (let i = 0; i < tableau.length; i++) {
+      const to = { type:'tableau', index:i };
+      if (canMove(card, from, to)) {
+        hints.push({ cardId: card.id, from, to });
+      }
+    }
+  }
+
+  return hints;
+}
+
+//힌트 고유 키 만들기
+function hintKey(hint) {
+  return `${hint.cardId}->${JSON.stringify(hint.to)}`;
+}
+
+//이동 성공 시 힌트 기록
+function markHintUsed(card, to) {
+  usedHints.add(`${card.id}->${JSON.stringify(to)}`);
+}
+
+//힌트 상태 초기화
+function resetHints() {
+  hintList = [];
+  hintIndex = 0;
+}
+
+function showHintOverlay(el) {
+  const rect = el.getBoundingClientRect();
+
+  const h = document.createElement('div');
+  h.className = 'hint';
+  h.style.position = 'fixed';
+  h.style.left = rect.left + 'px';
+  h.style.top = rect.top + 'px';
+  h.style.width = rect.width + 'px';
+  h.style.height = rect.height + 'px';
+  h.style.pointerEvents = 'none';
+
+  document.getElementById('hintOverlay').appendChild(h);
+}
+
+function clearHintOverlay() {
+  document.getElementById('hintOverlay').innerHTML = '';
+}
+
+document.getElementById('hintBtn').onclick = showGlobalHint;
+
+startGame();
 </script>
 </body>
 </html>

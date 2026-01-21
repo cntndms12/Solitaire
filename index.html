@@ -904,7 +904,7 @@ function cardFirework() {
 
 //승리 표시
 function showWin() {
-  topTimer();            // 타이머 정지
+  stopTimer();            // 타이머 정지
   cardFirework();         // 카드 폭죽
 
   const elapsed = Date.now() - startTime;

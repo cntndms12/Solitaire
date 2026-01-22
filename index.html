@@ -32,31 +32,63 @@
 	  pointer-events: none;
 	  z-index: 500;
 	}
+	
 	.win-overlay {
 	  position: fixed;
 	  inset: 0;
-	  background: rgba(0,0,0,0.65);
-	  display: none;
+	  background: rgba(0, 0, 0, 0.65); /* 반투명 배경 */
+	  display: none;                   /* 초기 숨김 */
 	  align-items: center;
 	  justify-content: center;
 	  z-index: 999;
 	}
 	.win-box {
+	  pointer-events: auto;
 	  background: #fff;
-	  color: #222;
-	  padding: 32px 40px;
+	  color: #111;
+	  padding: 20px;
 	  border-radius: 12px;
+	  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
 	  text-align: center;
-	  min-width: 260px;
+	  width: 200px;
+	  height: 220px;
+	  display: flex;
+	  flex-direction: column;
+	  justify-content: center;
+	  align-items: center;
+	  position: absolute;
+	  top: 50%;  /* 화면 세로 중앙 */
+	  left: calc(var(--tableau-w) / 2);  /* 카드 7장의 폭 중앙 */
+	  transform: translate(-50%, -50%);   /* 정확히 중앙 맞춤 */
+	  font-family: 'Segoe UI', sans-serif;
 	}
 	.win-box h1 {
-	  margin: 0 0 12px;
+	  margin: 0 0 16px;
+	  font-size: clamp(24px, 5vw, 36px);
+	}
+	.win-box p {
+	  font-size: 18px;
+	  margin: 8px 0 20px;
 	}
 	.win-box button {
-	  margin-top: 16px;
-	  padding: 8px 16px;
-	  font-size: 15px;
+	  margin-top: 10px;
+	  padding: 12px 24px;
+	  font-size: 16px;
+	  font-weight: bold;
+	  color: #fff;
+	  background: #28a745;
+	  border: none;
+	  border-radius: 8px;
 	  cursor: pointer;
+	  transition: background 0.2s;
+	}
+	.win-box button:hover {
+	  background: #218838;
+	}
+	/* 간단한 등장 애니메이션 */
+	@keyframes popIn {
+	  0% { transform: scale(0.5); opacity: 0; }
+	  100% { transform: scale(1); opacity: 1; }
 	}
 
 	#top {
@@ -83,6 +115,14 @@
 	  min-width: 120px;
 	  padding: 10px 10px;
 	  font-size: 20px;
+	  border-radius: 8px;
+
+	  border: none;                    /* 테두리 제거 */
+	  background: rgba(255,255,255,0.8); /* 타이머 배경처럼 반투명 */
+	  color: #222;                     /* 타이머 글씨 색과 맞춤 */
+	  cursor: pointer;
+
+	  box-shadow: none;                /* 입체감 제거 */
 	}
 	
 	.hint {
@@ -250,7 +290,7 @@
 	<!-- 승리 오버레이 UI -->	
 	<div id="winOverlay" class="win-overlay">
 	  <div class="win-box">
-		<h1>🎉CLEAR!</h1>
+		<h1>🎉<br/>CLEAR!</h1>
 		<p id="winTime"></p>
 		<button onclick="location.reload()" style="
 			margin-top:20px;
